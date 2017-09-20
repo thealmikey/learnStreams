@@ -4,6 +4,7 @@ import akka.stream.{ActorMaterializer, ClosedShape}
 import akka.stream.scaladsl._
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object Main extends App{
   implicit val system = ActorSystem("mike")
@@ -27,4 +28,12 @@ object Main extends App{
   })
 
   g.run()
+
+  val counter:Flow[Student,Int,NotUsed] = Flow[Student].map(_ => 1)
+  val sumSink:Sink[Int,Future[Int]] = Sink.fold[Int,Int](0)(_+_)
+
+  val counterGraph:RunnableGraph[Future[Int]] = theStudentsSource.via(counter).toMat(sumSink)(Keep.right)
+
+  counterGraph.run().onComplete{x => println(x)}//prints Success(4)
+
 }
